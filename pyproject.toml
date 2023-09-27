@@ -25,7 +25,8 @@ classifiers = [
 ]
 dependencies = [
   "correctionlib",
-  "jax"
+  "jax",
+  "jaxlib"
 ]
 
 [project.urls]
