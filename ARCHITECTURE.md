@@ -62,7 +62,7 @@ original correctionlib package. Which brings us to...
 ## correctionlib autodifferentiation in C++
 `correctionlib-gradients`, by design, only serves Python users.
 That simplifies development significantly and lets us move quickly as we experiment
-with features and find out about roadblocks. 
+with features and find out about roadblocks.
 In the longer term, it would be nice to have a single correctionlib AD implementation
 that serves both C++ and Python users.
 
@@ -74,4 +74,3 @@ existing AD library such as [enzyme](https://enzyme.mit.edu).
 
 Another option to explore is to perform C++ code generation of a function that evaluates
 the compute graph and then pass that function through [clad](https://github.com/vgvassilev/clad).
-
