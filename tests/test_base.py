@@ -13,7 +13,7 @@ from correctionlib_gradients import CorrectionWithGradient
 config.update("jax_enable_x64", True)
 
 
-def test_scalar():
+def test_scalar() -> None:
     c = schemav2.Correction(
         name="test scalar",
         version=2,

@@ -43,7 +43,8 @@ dependencies = [
   "pytest",
   "ipython",
   "ipdb",
-  "pre-commit"
+  "pre-commit",
+  "mypy"
 ]
 [tool.hatch.envs.default.scripts]
 test = "pytest {args:tests}"
@@ -89,6 +90,7 @@ line-length = 120
 skip-string-normalization = true
 
 [tool.ruff]
+src = ["src"]
 target-version = "py37"
 line-length = 120
 select = [
@@ -161,3 +163,20 @@ exclude_lines = [
   "if __name__ == .__main__.:",
   "if TYPE_CHECKING:",
 ]
+
+[tool.mypy]
+files = "src"
+python_version = "3.11"
+strict = true
+show_error_codes = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+warn_unreachable = true
+
+
+[[tool.mypy.overrides]]
+module = [ "numpy.*", ]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [ "correctionlib.*", ]
+ignore_missing_imports = true
