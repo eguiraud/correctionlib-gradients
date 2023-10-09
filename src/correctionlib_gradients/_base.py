@@ -2,14 +2,14 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 from functools import partial
-from typing import Any, Callable
+from typing import Any, Callable, TypeAlias
 
 import jax
 import numpy as np
 from correctionlib.schemav2 import Content, Correction
 
-Input = np.ndarray | str | int | float
-Output = (float | np.ndarray, dict[str, float | np.ndarray])
+Input: TypeAlias = float
+Output: TypeAlias = tuple[float, dict[str, float]]
 
 
 def isfloat(x: Any) -> bool:
@@ -32,7 +32,7 @@ def apply_ast(ast: Content, correction_name: str, _inputs: dict[str, Input]):
             raise NotImplementedError(msg)
 
 
-def grad_wrt_key(f: Callable[(dict[str, Input],), float], wrt: list[str] | None):
+def grad_wrt_key(f: Callable[[dict[str, Input]], float], wrt: list[str] | None):
     """Given a callable f that takes a dictionary inputs, return a callable
     that evaluates the gradient of f w.r.t. one or more of the arrays in
     the dictionary (specified by key).
