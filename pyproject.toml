@@ -189,3 +189,11 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = [ "correctionlib.*", ]
 ignore_missing_imports = true
+
+# JAX actually comes with typing, but in pre-commit.ci we run out of time
+# if we try to install them in the environment. So we cannot add JAX to
+# the additional_dependencies of mypy in .pre-commit-config.yaml,
+# so we have to tell mypy that it's ok if it's missing.
+[[tool.mypy.overrides]]
+module = [ "jax.*", "jaxlib.*" ]
+ignore_missing_imports = true
