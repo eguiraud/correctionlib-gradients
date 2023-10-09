@@ -44,7 +44,9 @@ dependencies = [
   "ipython",
   "ipdb",
   "pre-commit",
-  "mypy"
+  "mypy",
+  "sphinx",
+  "myst-parser"
 ]
 [tool.hatch.envs.default.scripts]
 test = "pytest {args:tests}"
