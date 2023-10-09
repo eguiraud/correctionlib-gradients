@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = 'Automatic differentiation for high-energy physics correction factor calculations.'
 readme = "README.md"
 requires-python = ">=3.10"
-license = "BSD-3-Clause"
+license = { text = "BSD-3-Clause" }
 keywords = []
 authors = [
   { name = "Enrico Guiraud", email = "enrico.guiraud@pm.me" },
