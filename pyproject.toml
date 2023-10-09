@@ -86,6 +86,14 @@ all = [
   "typing",
 ]
 
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
+xfail_strict = true
+filterwarnings = ["error", "default:::pkg_resources.*"] # because of https://github.com/cms-nanoAOD/correctionlib/issues/211
+log_cli_level = "info"
+testpaths = ["tests"]
+
 [tool.black]
 target-version = ["py310", "py311"]
 line-length = 120
@@ -173,7 +181,6 @@ strict = true
 show_error_codes = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 warn_unreachable = true
-
 
 [[tool.mypy.overrides]]
 module = [ "numpy.*", ]
