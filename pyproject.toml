@@ -42,7 +42,8 @@ dependencies = [
   "coverage[toml]>=6.5",
   "pytest",
   "ipython",
-  "ipdb"
+  "ipdb",
+  "pre-commit"
 ]
 [tool.hatch.envs.default.scripts]
 test = "pytest {args:tests}"
