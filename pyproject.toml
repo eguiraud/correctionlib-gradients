@@ -90,7 +90,7 @@ all = [
 minversion = "7.0"
 addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
 xfail_strict = true
-filterwarnings = ["error", "default:::pkg_resources.*"] # because of https://github.com/cms-nanoAOD/correctionlib/issues/211
+filterwarnings = ["error:::correctionlib_gradients.*"]
 log_cli_level = "info"
 testpaths = ["tests"]
 
