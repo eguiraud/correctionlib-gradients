@@ -35,6 +35,7 @@ In the future, `correctionlib` might also add an `evaluate` signature that takes
 as per [this discussion](https://github.com/cms-nanoAOD/correctionlib/issues/166).
 
 ## Alternative considered: Python code generation
+
 Instead of implementing a generic compute graph evaluator through which we pass
 JAX arrays, we could instead implement a code generator that takes a correction's
 compute graph and produces code for a function that evaluates the graph.
@@ -50,6 +51,7 @@ much more awkward than stepping through a compute graph walk, and in a sense thi
 kind of code generation is exactly what `jax.jit` does.
 
 ## Duplication of functionality w.r.t. correctionlib
+
 Since JAX has to do a forward pass that actually computes the correction's output in
 order to compute the corresponding gradients, this package ends up being a Python-only
 reimplementation of correctionlib (or at least of a differentiable subset of the supported
@@ -60,6 +62,7 @@ be more complicated to propagate gradients through the C++ correction implementa
 original correctionlib package. Which brings us to...
 
 ## correctionlib autodifferentiation in C++
+
 `correctionlib-gradients`, by design, only serves Python users.
 That simplifies development significantly and lets us move quickly as we experiment
 with features and find out about roadblocks.
