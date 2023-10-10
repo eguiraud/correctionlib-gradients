@@ -13,7 +13,7 @@ repos:
   - id: ruff
 
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: 'v1.5.1'
+  rev: v1.5.1
   hooks:
   - id: mypy
     files: src
@@ -29,6 +29,23 @@ repos:
     # pre-commit's default_language_version, see
     # https://pre-commit.com/#top_level-default_language_version
     language_version: python3.11
+
+- repo: https://github.com/pre-commit/mirrors-prettier
+  rev: v3.0.3
+  hooks:
+  - id: prettier
+
+- repo: https://github.com/codespell-project/codespell
+  rev: v2.2.6
+  hooks:
+  - id: codespell
+
+- repo: https://github.com/adamchainz/blacken-docs
+  rev: 1.16.0
+  hooks:
+  - id: blacken-docs
+    additional_dependencies:
+    - black==22.12.0
 
 ci:
   autoupdate_commit_msg: 'pre-commit: auto-update hooks'
