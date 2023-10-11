@@ -21,7 +21,19 @@ schemas = {
         inputs=[schemav2.Variable(name="x", type="real")],
         output=schemav2.Variable(name="a scale", type="real"),
         data=1.234,
-    )
+    ),
+    # this type of correction is unsupported
+    "categorical": schemav2.Correction(
+        name="categorical",
+        version=2,
+        inputs=[schemav2.Variable(name="c", type="int")],
+        output=schemav2.Variable(name="a scale", type="real"),
+        data=schemav2.Category(
+            nodetype="category",
+            input="x",
+            content=[schemav2.CategoryItem(key=0, value=1.234)],
+        ),
+    ),
 }
 
 
@@ -39,6 +51,11 @@ def test_missing_input():
         ValueError, match="Variable 'x' is required by correction 'test scalar' but is not present in input"
     ):
         cg.eval_dict({})
+
+
+def test_unsupported_correction():
+    with pytest.raises(ValueError, match="Correction 'categorical' contains the unsupported operation type 'Category'"):
+        CorrectionWithGradient(schemas["categorical"])
 
 
 @pytest.mark.parametrize("jit", [False, True])
