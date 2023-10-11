@@ -14,21 +14,29 @@ import numpy as np
 Value: TypeAlias = float | np.ndarray | jax.Array
 
 
-def apply_ast(ast: schema.Content, correction_name: str, _inputs: dict[str, Value]) -> Value:
+def apply_ast(ast: schema.Content, _inputs: dict[str, Value]) -> Value:
     match ast:
         case float(x):
             return x
+        case _:  # pragma: no cover
+            msg = "Unsupported type of node in the computation graph. This should never happen."
+            raise RuntimeError(msg)
+
+
+def assert_supported(c: schema.Correction, name: str) -> None:
+    match c.data:
+        case float():
+            return
         case _:
-            msg = (
-                f"Cannot compute gradients of correction '{correction_name}': "
-                f"it contains the unsupported operation type '{type(ast).__name__}'"
-            )
-            raise NotImplementedError(msg)
+            msg = f"Correction '{name}' contains the unsupported operation type '{type(c.data).__name__}'"
+            raise ValueError(msg)
 
 
 class CorrectionWithGradient:
     def __init__(self, c: schema.Correction):
-        self._evaluator = partial(apply_ast, c.data, c.name)
+        assert_supported(c, c.name)
+
+        self._evaluator = partial(apply_ast, c.data)
         self._input_names = [v.name for v in c.inputs]
         self._name = c.name
 
