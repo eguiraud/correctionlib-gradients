@@ -4,6 +4,7 @@
 import math
 
 import jax
+import numpy as np
 import pytest
 from correctionlib import schemav2
 
@@ -41,18 +42,44 @@ def test_missing_input():
 
 
 @pytest.mark.parametrize("jit", [False, True])
-def test_scale(jit) -> None:
+def test_evaluate_scale(jit):
     cg = CorrectionWithGradient(schemas["scale"])
-
-    # evaluate
     evaluate = jax.jit(cg.evaluate) if jit else cg.evaluate
     value, grad = jax.value_and_grad(evaluate)(4.2)
     assert math.isclose(value, 1.234)
     assert grad.item() == 0.0
 
-    # eval_dict
+
+@pytest.mark.parametrize("jit", [False, True])
+def test_eval_dict_scale(jit):
+    cg = CorrectionWithGradient(schemas["scale"])
     eval_dict = jax.jit(cg.eval_dict) if jit else cg.eval_dict
     value, grad = jax.value_and_grad(eval_dict)({"x": 4.2})
     assert math.isclose(value, 1.234)
     assert list(grad.keys()) == ["x"]
     assert grad["x"] == 0.0
+
+
+@pytest.mark.parametrize("jit", [False, True])
+def test_vectorized_evaluate_scale(jit):
+    cg = CorrectionWithGradient(schemas["scale"])
+    evaluate = jax.jit(cg.evaluate) if jit else cg.evaluate
+    x = np.array([0.0, 1.0])
+    values, grads = jax.value_and_grad(evaluate)(x)
+    assert np.allclose(values, [1.234, 1.234])
+    assert len(grads) == 2
+    assert grads[0] == 0.0
+    assert grads[1] == 0.0
+
+
+@pytest.mark.parametrize("jit", [False, True])
+def test_vectorized_eval_dict_scale(jit):
+    cg = CorrectionWithGradient(schemas["scale"])
+    eval_dict = jax.jit(cg.eval_dict) if jit else cg.eval_dict
+    x = np.array([0.0, 1.0])
+    values, grads = jax.value_and_grad(eval_dict)({"x": x})
+    assert np.allclose(values, [1.234, 1.234])
+    assert list(grads.keys()) == ["x"]
+    assert len(grads["x"]) == 2
+    assert grads["x"][0] == 0.0
+    assert grads["x"][1] == 0.0
