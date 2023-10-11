@@ -19,7 +19,7 @@ schemas = {
         name="test scalar",
         version=2,
         inputs=[schemav2.Variable(name="x", type="real")],
-        output=schemav2.Variable(name="a scale", type="real"),
+        output=schemav2.Variable(name="weight", type="real"),
         data=1.234,
     ),
     # this type of correction is unsupported
@@ -27,7 +27,7 @@ schemas = {
         name="categorical",
         version=2,
         inputs=[schemav2.Variable(name="c", type="int")],
-        output=schemav2.Variable(name="a scale", type="real"),
+        output=schemav2.Variable(name="weight", type="real"),
         data=schemav2.Category(
             nodetype="category",
             input="x",
@@ -64,7 +64,7 @@ def test_evaluate_scale(jit):
     evaluate = jax.jit(cg.evaluate) if jit else cg.evaluate
     value, grad = jax.value_and_grad(evaluate)(4.2)
     assert math.isclose(value, 1.234)
-    assert grad.item() == 0.0
+    assert grad == 0.0
 
 
 @pytest.mark.parametrize("jit", [False, True])
