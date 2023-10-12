@@ -22,6 +22,32 @@ schemas = {
         output=schemav2.Variable(name="weight", type="real"),
         data=1.234,
     ),
+    "simple-uniform-binning": schemav2.Correction(
+        name="simple uniform binning",
+        version=2,
+        inputs=[schemav2.Variable(name="x", type="real")],
+        output=schemav2.Variable(name="weight", type="real"),
+        data=schemav2.Binning(
+            nodetype="binning",
+            input="x",
+            edges=schemav2.UniformBinning(n=10, low=0.0, high=10.0),
+            content=[1.0, 2.0, 3.0, 4.0, 5.0, 5.0, 4.0, 3.0, 2.0, 1.0],
+            flow="clamp",
+        ),
+    ),
+    "simple-nonuniform-binning": schemav2.Correction(
+        name="simple non-uniform binning",
+        version=2,
+        inputs=[schemav2.Variable(name="x", type="real")],
+        output=schemav2.Variable(name="weight", type="real"),
+        data=schemav2.Binning(
+            nodetype="binning",
+            input="x",
+            edges=[0.0, 2.0, 4.0, 5.0, 6.0, 8.0, 10.0],
+            content=[1.0, 2.0, 3.0, 3.0, 2.0, 1.0],
+            flow="clamp",
+        ),
+    ),
     # this type of correction is unsupported
     "categorical": schemav2.Correction(
         name="categorical",
@@ -100,3 +126,29 @@ def test_vectorized_eval_dict_scale(jit):
     assert len(grads["x"]) == 2
     assert grads["x"][0] == 0.0
     assert grads["x"][1] == 0.0
+
+
+def test_vectorized_evaluate_simple_uniform_binning():
+    cg = CorrectionWithGradient(schemas["simple-uniform-binning"])
+    x = [3.0, 5.0, 11.0]  # 11. overflows: it tests clamping
+
+    values = cg.evaluate(x)
+    # here and below, the magic numbers have been checked by plotting
+    # the bins and their contents, the corresponding spline, and its derivative.
+    assert np.allclose(values, [3.47303922, 5.15686275, 1.0])
+
+    grads = np.vectorize(jax.grad(cg.evaluate))(x)
+    expected_grad = [0.995098039, 0.0, 0.0]
+    assert np.allclose(grads, expected_grad)
+
+
+def test_vectorized_evaluate_simple_nonuniform_binning():
+    cg = CorrectionWithGradient(schemas["simple-nonuniform-binning"])
+    x = [3.0, 5.0, 11.0]  # 11. overflows: it tests clamping
+
+    values = cg.evaluate(x)
+    assert np.allclose(values, [2.0, 3.08611111, 1])
+
+    grads = np.vectorize(jax.grad(cg.evaluate))(x)
+    expected_grad = [0.794444444, 0.0, 0.0]
+    assert np.allclose(grads, expected_grad)
