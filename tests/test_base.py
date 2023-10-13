@@ -48,6 +48,32 @@ schemas = {
             flow="clamp",
         ),
     ),
+    "compound-nonuniform-binning": schemav2.Correction(
+        name="compound non-uniform binning",
+        version=2,
+        inputs=[schemav2.Variable(name="x", type="real")],
+        output=schemav2.Variable(name="weight", type="real"),
+        data=schemav2.Binning(
+            nodetype="binning",
+            input="x",
+            edges=[0.0, 1.0],
+            content=[schemav2.Formula(nodetype="formula", expression="x*x", parser="TFormula", variables=["x"])],
+            flow="clamp",
+        ),
+    ),
+    "simple-nonuniform-binning-flow-default": schemav2.Correction(
+        name="simple non-uniform binning with a default value as 'flow'",
+        version=2,
+        inputs=[schemav2.Variable(name="x", type="real")],
+        output=schemav2.Variable(name="weight", type="real"),
+        data=schemav2.Binning(
+            nodetype="binning",
+            input="x",
+            edges=[0.0, 1.0],
+            content=[1.0],
+            flow=42.0,
+        ),
+    ),
     # this type of correction is unsupported
     "categorical": schemav2.Correction(
         name="categorical",
@@ -82,6 +108,16 @@ def test_missing_input():
 def test_unsupported_correction():
     with pytest.raises(ValueError, match="Correction 'categorical' contains the unsupported operation type 'Category'"):
         CorrectionWithGradient(schemas["categorical"])
+
+
+def test_unsupported_compound_binning():
+    with pytest.raises(ValueError, match=""):
+        CorrectionWithGradient(schemas["compound-nonuniform-binning"])
+
+
+def test_unsupported_flow_type():
+    with pytest.raises(ValueError, match=""):
+        CorrectionWithGradient(schemas["simple-nonuniform-binning-flow-default"])
 
 
 @pytest.mark.parametrize("jit", [False, True])
