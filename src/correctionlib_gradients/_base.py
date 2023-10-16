@@ -7,7 +7,7 @@ from typing import Callable, Iterable, TypeAlias, cast
 import correctionlib.schemav2 as schema
 import jax
 import numpy as np
-from scipy.interpolate import CubicSpline  # type: ignore[import]
+from scipy.interpolate import CubicSpline  # type: ignore[import-not-found]
 
 # TODO: switch to use numpy.array_api.Array as _the_ array type.
 # Must wait for it to be out of experimental.
