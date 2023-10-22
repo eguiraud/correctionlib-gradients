@@ -24,7 +24,7 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Physics",
 ]
 dependencies = [
-  "correctionlib",
+  "correctionlib@git+https://github.com/eguiraud/correctionlib.git@expose-formula-ast",
   "jax",
   "jaxlib",
   "scipy"
@@ -86,6 +86,9 @@ all = [
   "style",
   "typing",
 ]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.pytest.ini_options]
 minversion = "7.0"
