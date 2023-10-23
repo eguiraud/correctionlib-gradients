@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2023-present Enrico Guiraud <enrico.guiraud@pm.me>
 #
 # SPDX-License-Identifier: BSD-3-Clause
-from functools import partial
+from dataclasses import dataclass
 from typing import Callable, Iterable, TypeAlias, cast
 
 import correctionlib.schemav2 as schema
@@ -46,52 +46,69 @@ def make_differentiable_spline(x: Array, y: Array) -> Callable[[Value], Value]:
     return cast(Callable[[Value], Value], eval_spline)
 
 
-def apply_ast(ast: schema.Content, inputs: dict[str, Value]) -> Value:
-    match ast:
-        case float(x):
-            return x
-        case schema.Binning(edges=_edges, content=[*_values], input=_var, flow="clamp"):
-            # to make mypy happy
-            var: str = _var  # type: ignore[has-type]
-            edges: Iterable[float] | schema.UniformBinning = _edges  # type: ignore[has-type]
-            values: Array = _values  # type: ignore[has-type]
-
-            if isinstance(edges, schema.UniformBinning):
-                xs = np.linspace(edges.low, edges.high, edges.n + 1)
-            else:
-                xs = np.array(edges)
-            s = make_differentiable_spline(xs, values)
-            return s(inputs[var])
-        case _:  # pragma: no cover
-            msg = "Unsupported type of node in the computation graph. This should never happen."
-            raise RuntimeError(msg)
+DAGNode: TypeAlias = float | schema.Binning
 
 
-def assert_supported(c: schema.Correction, name: str) -> None:
-    match c.data:
-        case float():
-            pass
-        case schema.Binning(content=[*values], flow="clamp"):
-            if not all(isinstance(v, float) for v in values):  # type: ignore[has-type]
-                msg = (
-                    f"Correction '{name}' contains a compound Binning correction"
-                    "(one or more of the bin contents are not simple scalars). This is not supported."
-                )
+@dataclass
+class CorrectionDAG:
+    """A JAX-friendly representation of a correctionlib.schemav2.Correction's DAG."""
+
+    input_vars: list[schema.Variable]
+    node: DAGNode
+
+    def __init__(self, c: schema.Correction):
+        """Transform a schemav2.Correction object in a JAX-friendly DAG.
+
+        Errors out in case the correction contains unsupported operations.
+
+        Transformations applied:
+        - correctionlib.schema.Formula -> FormulaAST, a JAX-friendly formula evaluator object.
+        - [TODO] Binning nodes with constant bin contents -> differentiable relaxation.
+        """
+        self.input_vars = c.inputs
+        match c.data:
+            case float(x):
+                self.node = x
+            case schema.Binning(content=[*values], flow="clamp"):
+                if not all(isinstance(v, float) for v in values):  # type: ignore[has-type]
+                    msg = (
+                        f"Correction '{c.name}' contains a compound Binning correction"
+                        "(one or more of the bin contents are not simple scalars). This is not supported."
+                    )
+                    raise ValueError(msg)
+                self.node = c.data
+            case schema.Binning(flow=flow):
+                flow = cast(str, flow)  # type: ignore[has-type]
+                msg = f"Correction '{c.name}' contains a Binning correction with `{flow=}`. Only 'clamp' is supported."
                 raise ValueError(msg)
-        case schema.Binning(flow=flow):
-            flow = cast(str, flow)  # type: ignore[has-type]
-            msg = f"Correction '{name}' contains a Binning correction with `{flow=}`. Only 'clamp' is supported."
-            raise ValueError(msg)
-        case _:
-            msg = f"Correction '{name}' contains the unsupported operation type '{type(c.data).__name__}'"
-            raise ValueError(msg)
+            case _:
+                msg = f"Correction '{c.name}' contains the unsupported operation type '{type(c.data).__name__}'"
+                raise ValueError(msg)
+
+    def evaluate(self, inputs: dict[str, Value]) -> Value:
+        match self.node:
+            case float(x):
+                return x
+            case schema.Binning(edges=_edges, content=[*_values], input=_var, flow="clamp"):
+                # to make mypy happy
+                var: str = _var  # type: ignore[has-type]
+                edges: Iterable[float] | schema.UniformBinning = _edges  # type: ignore[has-type]
+                values: Array = _values  # type: ignore[has-type]
+
+                if isinstance(edges, schema.UniformBinning):
+                    xs = np.linspace(edges.low, edges.high, edges.n + 1)
+                else:
+                    xs = np.array(edges)
+                s = make_differentiable_spline(xs, values)
+                return s(inputs[var])
+            case _:  # pragma: no cover
+                msg = "Unsupported type of node in the computation graph. This should never happen."
+                raise RuntimeError(msg)
 
 
 class CorrectionWithGradient:
     def __init__(self, c: schema.Correction):
-        assert_supported(c, c.name)
-
-        self._evaluator = partial(apply_ast, c.data)
+        self._dag = CorrectionDAG(c)
         self._input_names = [v.name for v in c.inputs]
         self._name = c.name
 
@@ -101,7 +118,7 @@ class CorrectionWithGradient:
             raise ValueError(msg)
 
         input_dict = dict(zip(self._input_names, inputs))
-        return self._evaluator(input_dict)
+        return self._dag.evaluate(input_dict)
 
     def eval_dict(self, inputs: dict[str, Value]) -> Value:
         for n in self._input_names:
@@ -109,4 +126,4 @@ class CorrectionWithGradient:
                 msg = f"Variable '{n}' is required by correction '{self._name}' but is not present in input"
                 raise ValueError(msg)
 
-        return self._evaluator(inputs)
+        return self._dag.evaluate(inputs)
