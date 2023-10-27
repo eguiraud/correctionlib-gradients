@@ -8,17 +8,17 @@ import jax
 import numpy as np
 from scipy.interpolate import CubicSpline  # type: ignore[import-untyped]
 
-from correctionlib_gradients._typedefs import Array, Value
+from correctionlib_gradients._typedefs import Value
 
 
-def midpoints(x: Array) -> Array:
+def midpoints(x: jax.Array) -> jax.Array:
     return 0.5 * (x[1:] + x[:-1])
 
 
 # TODO: the callable returned is not traceable by JAX, so it does not support jax.jit, jax.vmap etc.
 # TODO: would it make more sense if the value returned was the exact value given by the binning,
 #       while the derivative is calculated by spline.derivative?
-def make_differentiable_spline(x: Array, y: Array) -> Callable[[Value], Value]:
+def make_differentiable_spline(x: jax.Array, y: jax.Array) -> Callable[[Value], Value]:
     spline = CubicSpline(midpoints(x), y, bc_type="clamped")
     dspline = spline.derivative(1)
 
@@ -87,7 +87,7 @@ class CorrectionDAG:
                 # to make mypy happy
                 var: str = _var  # type: ignore[has-type]
                 edges: Iterable[float] | schema.UniformBinning = _edges  # type: ignore[has-type]
-                values: Array = _values  # type: ignore[has-type]
+                values: jax.Array = _values  # type: ignore[has-type]
 
                 if isinstance(edges, schema.UniformBinning):
                     xs = np.linspace(edges.low, edges.high, edges.n + 1)
