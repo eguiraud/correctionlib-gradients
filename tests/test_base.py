@@ -4,6 +4,7 @@
 import math
 
 import jax
+import jax.numpy as jnp
 import numpy as np
 import pytest
 from correctionlib import schemav2
@@ -86,6 +87,46 @@ schemas = {
             edges=[0.0, 1.0],
             content=[1.0],
             flow=42.0,
+        ),
+    ),
+    "constant-formula": schemav2.Correction(
+        name="formula that returns a constant",
+        version=2,
+        inputs=[schemav2.Variable(name="x", type="real")],
+        output=schemav2.Variable(name="a scale", type="real"),
+        data=schemav2.Formula(
+            nodetype="formula",
+            expression="42.",
+            parser="TFormula",
+            variables=[],
+        ),
+    ),
+    "simple-formula": schemav2.Correction(
+        name="simple numerical expression",
+        version=2,
+        inputs=[schemav2.Variable(name="x", type="real")],
+        output=schemav2.Variable(name="a scale", type="real"),
+        data=schemav2.Formula(
+            nodetype="formula",
+            expression="x*x",
+            parser="TFormula",
+            variables=["x"],
+        ),
+    ),
+    "complex-formula": schemav2.Correction(
+        name="complex numerical expression that uses all available operations",
+        version=2,
+        inputs=[schemav2.Variable(name="x", type="real"), schemav2.Variable(name="y", type="real")],
+        output=schemav2.Variable(name="a scale", type="real"),
+        data=schemav2.Formula(
+            nodetype="formula",
+            # FIXME add unary ops, add parameters
+            expression=(
+                "(x == x) + (x != y) + (x > y) + (x < y) + (x >= y) + (x <= y)"
+                "- x/y + x*y + pow(x, 2) + atan2(x, y) + max(x, y) + min(x, y)"
+            ),
+            parser="TFormula",
+            variables=["x", "y"],
         ),
     ),
     # this type of correction is unsupported
@@ -210,13 +251,13 @@ def test_mixed_scalar_array_inputs(jit):
     assert len(grads) == 2
     assert np.allclose(grads, [0.0, 0.0])
 
-    values, grads = np.vectorize(jax.value_and_grad(evaluate))(jax.numpy.array(42.0), [1.234, 8.0])
+    values, grads = np.vectorize(jax.value_and_grad(evaluate))(jnp.array(42.0), [1.234, 8.0])
     assert len(values) == 2
     assert np.allclose(values, [1.234, 1.234])
     assert len(grads) == 2
     assert np.allclose(grads, [0.0, 0.0])
 
-    values, grads = np.vectorize(jax.value_and_grad(evaluate))(jax.numpy.array(42.0), jax.numpy.array([1.234, 8.0]))
+    values, grads = np.vectorize(jax.value_and_grad(evaluate))(jnp.array(42.0), jnp.array([1.234, 8.0]))
     assert len(values) == 2
     assert np.allclose(values, [1.234, 1.234])
     assert len(grads) == 2
@@ -229,11 +270,11 @@ def test_mixed_scalar_array_inputs_nojax():
     assert len(values) == 2
     assert np.allclose(values, [1.234, 1.234])
 
-    values = cg.evaluate(jax.numpy.array(42.0), [1.234, 8.0])
+    values = cg.evaluate(jnp.array(42.0), [1.234, 8.0])
     assert len(values) == 2
     assert np.allclose(values, [1.234, 1.234])
 
-    values = cg.evaluate(jax.numpy.array(42.0), jax.numpy.array([1.234, 8.0]))
+    values = cg.evaluate(jnp.array(42.0), jnp.array([1.234, 8.0]))
     assert len(values) == 2
     assert np.allclose(values, [1.234, 1.234])
 
@@ -266,3 +307,90 @@ def test_vectorized_evaluate_simple_nonuniform_binning():
     expected_grad = [0.794444444, 0.0, 0.0]
     assert len(grads) == len(expected_grad)
     assert np.allclose(grads, expected_grad)
+
+
+@pytest.mark.parametrize("jit", [False, True])
+def test_constant_formula(jit):
+    cg = CorrectionWithGradient(schemas["constant-formula"])
+    evaluate = jax.jit(cg.evaluate) if jit else cg.evaluate
+    assert jax.value_and_grad(evaluate)(0.0) == (42.0, 0.0)
+
+
+def test_constant_formula_nojax():
+    cg = CorrectionWithGradient(schemas["constant-formula"])
+    res = cg.evaluate([0.0, 1.0])
+    assert len(res) == 2
+    assert jnp.array_equal(res, (42.0, 42.0))
+
+
+@pytest.mark.parametrize("jit", [False, True])
+def test_simple_formula(jit):
+    cg = CorrectionWithGradient(schemas["simple-formula"])
+    evaluate = jax.jit(cg.evaluate) if jit else cg.evaluate
+    value, grads = jax.value_and_grad(evaluate)(2.0)
+    assert value.shape == ()
+    assert math.isclose(value, 4.0)
+    assert grads.shape == ()
+    assert math.isclose(grads, 4.0)
+
+
+def test_simple_formula_nojax():
+    cg = CorrectionWithGradient(schemas["simple-formula"])
+    value = cg.evaluate(2.0)
+    assert value.shape == ()
+    assert math.isclose(value, 4.0)
+
+    values = cg.evaluate([2.0, 4.0])
+    assert len(values) == 2
+    assert np.allclose(values, [4.0, 16.0])
+
+
+@pytest.mark.parametrize("jit", [False, True])
+def test_simple_formula_vectorized(jit):
+    cg = CorrectionWithGradient(schemas["simple-formula"])
+    evaluate = jax.jit(cg.evaluate) if jit else cg.evaluate
+    # pass in different kinds of arrays/collections
+    for x in [1.0, 2.0, 3.0], np.arange(1, 4, dtype=np.float32), jnp.arange(1, 4, dtype=np.float32):
+        values, grads = np.vectorize(jax.value_and_grad(evaluate))(x)
+        assert len(values) == 3
+        assert np.allclose(values, [1.0, 4.0, 9.0])
+        assert len(grads) == 3
+        assert np.allclose(grads, [2.0, 4.0, 6.0])
+
+
+@pytest.mark.parametrize("jit", [False, True])
+def test_complex_formula(jit):
+    cg = CorrectionWithGradient(schemas["complex-formula"])
+    evaluate = jax.jit(cg.evaluate) if jit else cg.evaluate
+    value, grads = jax.value_and_grad(evaluate, argnums=[0, 1])(1.0, 2.0)
+    assert value.shape == ()
+    assert math.isclose(value, 9.963647609000805)
+    assert len(grads) == 2
+    assert np.allclose(grads, [4.9, 2.05])
+
+
+def test_complex_formula_nojax():
+    cg = CorrectionWithGradient(schemas["complex-formula"])
+    value = cg.evaluate(1.0, 2.0)
+    assert value.shape == ()
+    assert math.isclose(value, 9.963647609000805)
+
+    values = cg.evaluate([1.0, 2.0], [2.0, 1.0])
+    assert len(values) == 2
+    assert np.allclose(values, [9.963647609000805, 12.107149])
+
+
+# TODO this does not work, seemingly because of np.vectorize
+# choking on the gradients being a tuple.
+# @pytest.mark.parametrize("jit", [False, True])
+# def test_complex_formula_vectorized(jit):
+#     cg = CorrectionWithGradient(schemas["complex-formula"])
+#     evaluate = jax.jit(cg.evaluate) if jit else cg.evaluate
+#     # pass in different kinds of arrays/collections
+#     y = jnp.array(2.)
+#     for x in [1.0, 2.0], np.array([1., 2.]), jnp.array([1., 2.]):
+#         values, grads = np.vectorize(jax.value_and_grad(evaluate, argnums=[0,1]))(x, y)
+#         assert len(values) == 2
+#         assert np.allclose(values, [9.963647609000805, 14.7853985])
+#         assert len(grads) == 88
+#         assert np.allclose(grads, [2.0, 4.0, 6.0])

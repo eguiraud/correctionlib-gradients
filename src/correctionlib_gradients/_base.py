@@ -5,9 +5,12 @@ from typing import Callable, Iterable, TypeAlias, cast
 
 import correctionlib.schemav2 as schema
 import jax
+import jax.numpy as jnp
 import numpy as np
 from scipy.interpolate import CubicSpline  # type: ignore[import-untyped]
 
+import correctionlib_gradients._utils as utils
+from correctionlib_gradients._formuladag import FormulaDAG
 from correctionlib_gradients._typedefs import Value
 
 
@@ -41,7 +44,7 @@ def make_differentiable_spline(x: jax.Array, y: jax.Array) -> Callable[[Value], 
     return cast(Callable[[Value], Value], eval_spline)
 
 
-DAGNode: TypeAlias = float | schema.Binning
+DAGNode: TypeAlias = float | schema.Binning | FormulaDAG
 
 
 class CorrectionDAG:
@@ -75,19 +78,21 @@ class CorrectionDAG:
                 flow = cast(str, flow)  # type: ignore[has-type]
                 msg = f"Correction '{c.name}' contains a Binning correction with `{flow=}`. Only 'clamp' is supported."
                 raise ValueError(msg)
+            case schema.Formula() as f:
+                self.node = FormulaDAG(f, c.inputs)
             case _:
                 msg = f"Correction '{c.name}' contains the unsupported operation type '{type(c.data).__name__}'"
                 raise ValueError(msg)
 
     def evaluate(self, inputs: dict[str, jax.Array]) -> jax.Array:
-        result_size = self._get_result_size(inputs)
+        result_size = utils.get_result_size(inputs)
 
         match self.node:
             case float(x):
                 if result_size == 0:
-                    return jax.numpy.array(x)
+                    return jnp.array(x)
                 else:
-                    return jax.numpy.array([x] * result_size)
+                    return jnp.repeat(x, result_size)
             case schema.Binning(edges=_edges, content=[*_values], input=_var, flow="clamp"):
                 # to make mypy happy
                 var: str = _var  # type: ignore[has-type]
@@ -100,28 +105,11 @@ class CorrectionDAG:
                     xs = np.array(edges)
                 s = make_differentiable_spline(xs, values)
                 return s(inputs[var])
+            case FormulaDAG() as f:
+                return f.evaluate(inputs)
             case _:  # pragma: no cover
                 msg = "Unsupported type of node in the computation graph. This should never happen."
                 raise RuntimeError(msg)
-
-    def _get_result_size(self, inputs: dict[str, jax.Array]) -> int:
-        """Calculate what size the result of a DAG evaluation should have.
-
-        The size is equal to the one, common size (shape[0], or number or rows) of all
-        the non-scalar inputs we require, or 0 if all inputs are scalar.
-        An error is thrown in case the shapes of two non-scalar inputs differ.
-        """
-        result_shape: tuple[int, ...] = ()
-        for value in inputs.values():
-            if result_shape == ():
-                result_shape = value.shape
-            elif value.shape != result_shape:
-                msg = "The shapes of all non-scalar inputs should match."
-                raise ValueError(msg)
-        if result_shape != ():
-            return result_shape[0]
-        else:
-            return 0
 
 
 class CorrectionWithGradient:
@@ -132,7 +120,7 @@ class CorrectionWithGradient:
 
     def evaluate(self, *inputs: Value) -> jax.Array:
         self._check_num_inputs(inputs)
-        inputs_as_jax = tuple(jax.numpy.array(i) for i in inputs)
+        inputs_as_jax = tuple(jnp.array(i) for i in inputs)
         self._check_input_types(inputs_as_jax)
         input_names = (v.name for v in self._input_vars)
 
