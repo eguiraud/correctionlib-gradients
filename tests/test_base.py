@@ -110,6 +110,13 @@ def test_wrong_input_length():
         cg.evaluate(0.0, 1.0)
 
 
+def test_wrong_input_type():
+    cg = CorrectionWithGradient(schemas["scale"])
+
+    with pytest.raises(ValueError, match="Variable 'x' has type int64 instead of the expected float"):
+        cg.evaluate(0)
+
+
 def test_missing_input():
     cg = CorrectionWithGradient(schemas["scale"])
 
