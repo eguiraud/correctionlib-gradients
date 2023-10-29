@@ -6,7 +6,7 @@ from typing import Callable, Iterable, TypeAlias, cast
 import correctionlib.schemav2 as schema
 import jax
 import numpy as np
-from scipy.interpolate import CubicSpline  # type: ignore[import-not-found]
+from scipy.interpolate import CubicSpline  # type: ignore[import-untyped]
 
 from correctionlib_gradients._typedefs import Array, Value
 
