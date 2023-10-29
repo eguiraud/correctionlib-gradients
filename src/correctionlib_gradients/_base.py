@@ -67,7 +67,7 @@ class CorrectionDAG:
                 if not all(isinstance(v, float) for v in values):  # type: ignore[has-type]
                     msg = (
                         f"Correction '{c.name}' contains a compound Binning correction"
-                        "(one or more of the bin contents are not simple scalars). This is not supported."
+                        " (one or more of the bin contents are not simple scalars). This is not supported."
                     )
                     raise ValueError(msg)
                 self.node = c.data
