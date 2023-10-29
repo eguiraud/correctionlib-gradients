@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2023-present Enrico Guiraud <enrico.guiraud@pm.me>
 #
 # SPDX-License-Identifier: BSD-3-Clause
-from dataclasses import dataclass
 from typing import Callable, Iterable, TypeAlias, cast
 
 import correctionlib.schemav2 as schema
@@ -45,7 +44,6 @@ def make_differentiable_spline(x: Array, y: Array) -> Callable[[Value], Value]:
 DAGNode: TypeAlias = float | schema.Binning
 
 
-@dataclass
 class CorrectionDAG:
     """A JAX-friendly representation of a correctionlib.schemav2.Correction's DAG."""
 
