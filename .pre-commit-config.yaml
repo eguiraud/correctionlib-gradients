@@ -18,7 +18,7 @@ repos:
       - id: mypy
         files: src
         args: []
-        additional_dependencies: []
+        additional_dependencies: ["scipy"]
 
   - repo: https://github.com/psf/black-pre-commit-mirror
     rev: 23.10.0
