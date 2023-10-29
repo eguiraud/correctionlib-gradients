@@ -16,9 +16,23 @@ jax.config.update("jax_enable_x64", True)
 
 schemas = {
     "scale": schemav2.Correction(
-        name="test scalar",
+        name="constant scale that still requires 1 input",
         version=2,
         inputs=[schemav2.Variable(name="x", type="real")],
+        output=schemav2.Variable(name="weight", type="real"),
+        data=1.234,
+    ),
+    "scale-no-input": schemav2.Correction(
+        name="constant scale that requires no input",
+        version=2,
+        inputs=[],
+        output=schemav2.Variable(name="weight", type="real"),
+        data=1.234,
+    ),
+    "scale-two-inputs": schemav2.Correction(
+        name="constant scale that requires two inputs",
+        version=2,
+        inputs=[schemav2.Variable(name="x", type="real"), schemav2.Variable(name="y", type="real")],
         output=schemav2.Variable(name="weight", type="real"),
         data=1.234,
     ),
@@ -142,6 +156,19 @@ def test_evaluate_scale_nojax():
     values = cg.evaluate([4.2, 4.2])
     assert len(values) == 2
     assert np.allclose(values, [1.234, 1.234])
+
+
+def test_evaluate_scale_no_input():
+    cg = CorrectionWithGradient(schemas["scale-no-input"])
+    value = cg.evaluate()
+    value.item()
+    assert math.isclose(value.item(), 1.234)
+
+
+def test_input_sizes_mismatch():
+    cg = CorrectionWithGradient(schemas["scale-two-inputs"])
+    with pytest.raises(ValueError, match="The shapes of all non-scalar inputs should match."):
+        cg.evaluate([1.0, 2.0], [3.0, 4.0, 5.0])
 
 
 @pytest.mark.parametrize("jit", [False, True])
