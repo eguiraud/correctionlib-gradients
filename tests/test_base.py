@@ -193,6 +193,44 @@ def test_vectorized_evaluate_scale(jit):
     assert grads[1] == 0.0
 
 
+@pytest.mark.parametrize("jit", [False, True])
+def test_mixed_scalar_array_inputs(jit):
+    cg = CorrectionWithGradient(schemas["scale-two-inputs"])
+    evaluate = jax.jit(cg.evaluate) if jit else cg.evaluate
+    values, grads = np.vectorize(jax.value_and_grad(evaluate))(42.0, [1.234, 8.0])
+    assert len(values) == 2
+    assert np.allclose(values, [1.234, 1.234])
+    assert len(grads) == 2
+    assert np.allclose(grads, [0.0, 0.0])
+
+    values, grads = np.vectorize(jax.value_and_grad(evaluate))(jax.numpy.array(42.0), [1.234, 8.0])
+    assert len(values) == 2
+    assert np.allclose(values, [1.234, 1.234])
+    assert len(grads) == 2
+    assert np.allclose(grads, [0.0, 0.0])
+
+    values, grads = np.vectorize(jax.value_and_grad(evaluate))(jax.numpy.array(42.0), jax.numpy.array([1.234, 8.0]))
+    assert len(values) == 2
+    assert np.allclose(values, [1.234, 1.234])
+    assert len(grads) == 2
+    assert np.allclose(grads, [0.0, 0.0])
+
+
+def test_mixed_scalar_array_inputs_nojax():
+    cg = CorrectionWithGradient(schemas["scale-two-inputs"])
+    values = cg.evaluate(42.0, [1.234, 8.0])
+    assert len(values) == 2
+    assert np.allclose(values, [1.234, 1.234])
+
+    values = cg.evaluate(jax.numpy.array(42.0), [1.234, 8.0])
+    assert len(values) == 2
+    assert np.allclose(values, [1.234, 1.234])
+
+    values = cg.evaluate(jax.numpy.array(42.0), jax.numpy.array([1.234, 8.0]))
+    assert len(values) == 2
+    assert np.allclose(values, [1.234, 1.234])
+
+
 def test_vectorized_evaluate_simple_uniform_binning():
     cg = CorrectionWithGradient(schemas["simple-uniform-binning"])
     x = [3.0, 5.0, 11.0]  # 11. overflows: it tests clamping
