@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 import math
-import re
 
 import jax
 import numpy as np
@@ -115,11 +114,9 @@ def test_unsupported_compound_binning():
     with pytest.raises(
         ValueError,
         match=(
-            re.escape(
-                "Correction 'compound non-uniform binning' contains a compound "
-                "Binning correction (one or more of the bin contents are not "
-                "simple scalars). This is not supported."
-            )
+            "Correction 'compound non-uniform binning' contains a compound "
+            "Binning correction \\(one or more of the bin contents are not "
+            "simple scalars\\). This is not supported."
         ),
     ):
         CorrectionWithGradient(schemas["compound-nonuniform-binning"])
@@ -128,7 +125,7 @@ def test_unsupported_compound_binning():
 def test_unsupported_flow_type():
     with pytest.raises(
         ValueError,
-        match=re.escape(
+        match=(
             "Correction 'simple non-uniform binning with a default value as "
             "'flow'' contains a Binning correction with `flow=42.0`. "
             "Only 'clamp' is supported."
