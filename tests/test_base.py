@@ -101,9 +101,9 @@ def test_missing_input():
     cg = CorrectionWithGradient(schemas["scale"])
 
     with pytest.raises(
-        ValueError, match="Variable 'x' is required by correction 'test scalar' but is not present in input"
+        ValueError, match="This correction requires 1 input\\(s\\), 0 provided. Required inputs are \\['x'\\]"
     ):
-        cg.eval_dict({})
+        cg.evaluate()
 
 
 def test_unsupported_correction():
@@ -147,16 +147,6 @@ def test_evaluate_scale(jit):
 
 
 @pytest.mark.parametrize("jit", [False, True])
-def test_eval_dict_scale(jit):
-    cg = CorrectionWithGradient(schemas["scale"])
-    eval_dict = jax.jit(cg.eval_dict) if jit else cg.eval_dict
-    value, grad = jax.value_and_grad(eval_dict)({"x": 4.2})
-    assert math.isclose(value, 1.234)
-    assert list(grad.keys()) == ["x"]
-    assert grad["x"] == 0.0
-
-
-@pytest.mark.parametrize("jit", [False, True])
 def test_vectorized_evaluate_scale(jit):
     cg = CorrectionWithGradient(schemas["scale"])
     evaluate = jax.jit(cg.evaluate) if jit else cg.evaluate
@@ -166,19 +156,6 @@ def test_vectorized_evaluate_scale(jit):
     assert len(grads) == 2
     assert grads[0] == 0.0
     assert grads[1] == 0.0
-
-
-@pytest.mark.parametrize("jit", [False, True])
-def test_vectorized_eval_dict_scale(jit):
-    cg = CorrectionWithGradient(schemas["scale"])
-    eval_dict = jax.jit(cg.eval_dict) if jit else cg.eval_dict
-    x = np.array([0.0, 1.0])
-    values, grads = jax.value_and_grad(eval_dict)({"x": x})
-    assert np.allclose(values, [1.234, 1.234])
-    assert list(grads.keys()) == ["x"]
-    assert len(grads["x"]) == 2
-    assert grads["x"][0] == 0.0
-    assert grads["x"][1] == 0.0
 
 
 def test_vectorized_evaluate_simple_uniform_binning():

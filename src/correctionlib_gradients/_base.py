@@ -108,16 +108,11 @@ class CorrectionWithGradient:
 
     def evaluate(self, *inputs: Value) -> Value:
         if (n_in := len(inputs)) != (n_expected := len(self._input_names)):
-            msg = f"This correction requires {n_expected} input(s), {n_in} provided"
+            msg = (
+                f"This correction requires {n_expected} input(s), {n_in} provided."
+                f" Required inputs are {self._input_names}"
+            )
             raise ValueError(msg)
 
         input_dict = dict(zip(self._input_names, inputs))
         return self._dag.evaluate(input_dict)
-
-    def eval_dict(self, inputs: dict[str, Value]) -> Value:
-        for n in self._input_names:
-            if n not in inputs:
-                msg = f"Variable '{n}' is required by correction '{self._name}' but is not present in input"
-                raise ValueError(msg)
-
-        return self._dag.evaluate(inputs)
