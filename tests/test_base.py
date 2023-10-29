@@ -134,6 +134,16 @@ def test_unsupported_flow_type():
         CorrectionWithGradient(schemas["simple-nonuniform-binning-flow-default"])
 
 
+def test_evaluate_scale_nojax():
+    cg = CorrectionWithGradient(schemas["scale"])
+    value = cg.evaluate(4.2)
+    assert math.isclose(value, 1.234)
+
+    values = cg.evaluate([4.2, 4.2])
+    assert len(values) == 2
+    assert np.allclose(values, [1.234, 1.234])
+
+
 @pytest.mark.parametrize("jit", [False, True])
 def test_evaluate_scale(jit):
     cg = CorrectionWithGradient(schemas["scale"])
