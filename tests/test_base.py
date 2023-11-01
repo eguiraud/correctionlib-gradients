@@ -120,10 +120,12 @@ schemas = {
         output=schemav2.Variable(name="a scale", type="real"),
         data=schemav2.Formula(
             nodetype="formula",
-            # FIXME add unary ops, add parameters
             expression=(
                 "(x == x) + (x != y) + (x > y) + (x < y) + (x >= y) + (x <= y)"
                 "- x/y + x*y + pow(x, 2) + atan2(x, y) + max(x, y) + min(x, y)"
+                "+ (-x) + log(x) + log10(x) + exp(x) + erf(x) + sqrt(x) + abs(x)"
+                "+ cos(x) + sin(x) + tan(x) + acos(x / y) + asin(x / y) + atan(x) + cosh(x)"
+                "+ sinh(x) + tanh(x) + acosh(x * y) + asinh(x) + atanh(x / y)"
             ),
             parser="TFormula",
             variables=["x", "y"],
@@ -364,20 +366,20 @@ def test_complex_formula(jit):
     evaluate = jax.jit(cg.evaluate) if jit else cg.evaluate
     value, grads = jax.value_and_grad(evaluate, argnums=[0, 1])(1.0, 2.0)
     assert value.shape == ()
-    assert math.isclose(value, 9.963647609000805)
+    assert math.isclose(value, 26.047519582032493, abs_tol=1e-6)
     assert len(grads) == 2
-    assert np.allclose(grads, [4.9, 2.05])
+    assert np.allclose(grads, [19.25876411, 2.29401694])
 
 
 def test_complex_formula_nojax():
     cg = CorrectionWithGradient(schemas["complex-formula"])
     value = cg.evaluate(1.0, 2.0)
     assert value.shape == ()
-    assert math.isclose(value, 9.963647609000805)
+    assert math.isclose(value, 26.047519582032493, abs_tol=1e-6)
 
-    values = cg.evaluate([1.0, 2.0], [2.0, 1.0])
+    values = cg.evaluate([1.0, 2.0], [2.0, 3.0])
     assert len(values) == 2
-    assert np.allclose(values, [9.963647609000805, 12.107149])
+    assert np.allclose(values, [26.047519582032493, 43.77948741392216])
 
 
 # TODO this does not work, seemingly because of np.vectorize
