@@ -6,10 +6,8 @@ The goal of this project is to perform autodifferentiation of
 [correctionlib](https://github.com/cms-nanoAOD/correctionlib) correction calculations.
 
 The main idea is to produce a Python function that evaluates a correction
-by walking the compute graph described by `correctionlib.schemav2.Correction` (basically a
+by walking the compute graph described by `correctionlib.schemav2.Correction` (i.e. a
 Python version of the JSON representation of a correction).
-This is `_base.apply_ast(ast, correction_name, inputs)`. From that generic function we
-obtain a function that evaluates a specific correction with `partial(apply_ast(ast, name))`.
 
 [JAX](https://jax.readthedocs.io/en/latest/index.html) can then see what happens to values
 that pass through this compute graph evaluator and autodifferentiate accordingly (I had
@@ -21,18 +19,7 @@ which is done by providing the implementation of the corresponding Jacobian vect
 (see JAX docs).
 
 We then wrap the JAX-friendly compute graph evaluation in a `CorrectionWithGradient` object
-that mimics the interface of `correctionlib.highlevel.Correction` but evaluates the correction
-as well as its gradient. `jax.grad` is implemented in terms of `jax.value_and_grad` so there is
-really no performance difference to retrieve value and gradient both from JAX.
-
-I said "mimics the interface" but that's not quite true: the signature of `evaluate` is different.
-`correctionlib.Correction.evaluate` takes positional (nameless) parameters, one per input
-variable to the correction, and expects that users pass those values in the correct order.
-`CorrectionWithGradient.evaluate` takes a dictionary of inputs, with keys corresponding to the
-names of the input variables. This fits well with the extra parameter `wrt` that lets users
-specify with respect to which variables gradients should be computed, selecting inputs by name.
-In the future, `correctionlib` might also add an `evaluate` signature that takes inputs by name,
-as per [this discussion](https://github.com/cms-nanoAOD/correctionlib/issues/166).
+that mimics the interface of `correctionlib.highlevel.Correction`.
 
 ## Alternative considered: Python code generation
 
@@ -61,7 +48,7 @@ The duplication is not ideal, but at the time of writing we feel it would
 be more complicated to propagate gradients through the C++ correction implementations of the
 original correctionlib package. Which brings us to...
 
-## correctionlib autodifferentiation in C++
+## correctionlib auto-differentiation in C++
 
 `correctionlib-gradients`, by design, only serves Python users.
 That simplifies development significantly and lets us move quickly as we experiment
