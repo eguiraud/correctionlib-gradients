@@ -8,6 +8,8 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/correctionlib-gradients.svg)](https://pypi.org/project/correctionlib-gradients)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/correctionlib-gradients.svg)](https://pypi.org/project/correctionlib-gradients)
 
+A [JAX](https://jax.readthedocs.io)-friendly, auto-differentiable, Python-only implementation of [correctionlib](https://github.com/cms-nanoAOD/correctionlib) correction evaluations.
+
 ---
 
 **Table of Contents**
@@ -25,8 +27,10 @@ pip install correctionlib-gradients
 
 ## Usage
 
-1. construct a `CorrectionWithGradient` object from a correctionlib schema
+1. construct a `CorrectionWithGradient` object from a `correctionlib.schemav2.Correction`
 2. there is no point 2: you can use `CorrectionWithGradient.evaluate` as a normal JAX-friendly, auto-differentiable function
+
+### Example
 
 ```python
 import jax
