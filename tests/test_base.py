@@ -298,9 +298,12 @@ def test_vectorized_evaluate_simple_uniform_binning():
     # here and below, the magic numbers have been checked by plotting
     # the bins and their contents, the corresponding spline, and its derivative.
     assert len(values) == 3
-    assert np.allclose(values, [3.47303922, 5.15686275, 1.0])
+    expected_values = [3.47303922, 5.15686275, 1.0]
+    assert np.allclose(values, expected_values)
 
-    grads = np.vectorize(jax.grad(cg.evaluate))(x)
+    values, grads = np.vectorize(jax.value_and_grad(cg.evaluate))(x)
+    assert len(values) == 3
+    assert np.allclose(values, expected_values)
     expected_grad = [0.995098039, 0.0, 0.0]
     assert len(grads) == len(expected_grad)
     assert np.allclose(grads, expected_grad)
@@ -312,9 +315,12 @@ def test_vectorized_evaluate_simple_nonuniform_binning():
 
     values = cg.evaluate(x)
     assert len(values) == 3
-    assert np.allclose(values, [2.0, 3.08611111, 1])
+    expected_values = [2.0, 3.08611111, 1]
+    assert np.allclose(values, expected_values)
 
-    grads = np.vectorize(jax.grad(cg.evaluate))(x)
+    values, grads = np.vectorize(jax.value_and_grad(cg.evaluate))(x)
+    assert len(values) == 3
+    assert np.allclose(values, expected_values)
     expected_grad = [0.794444444, 0.0, 0.0]
     assert len(grads) == len(expected_grad)
     assert np.allclose(grads, expected_grad)
