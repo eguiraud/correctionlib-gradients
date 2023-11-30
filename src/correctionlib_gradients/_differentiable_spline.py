@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 import jax
-import numpy as np
+import jax.numpy as jnp
 from correctionlib.schemav2 import Binning, UniformBinning
 from scipy.interpolate import CubicSpline  # type: ignore[import-untyped]
 
@@ -27,9 +27,9 @@ class SplineWithGrad:
     @staticmethod
     def from_binning(b: Binning) -> "SplineWithGrad":
         if isinstance(b.edges, UniformBinning):
-            edges = np.linspace(b.edges.low, b.edges.high, b.edges.n + 1)
+            edges = jnp.linspace(b.edges.low, b.edges.high, b.edges.n + 1)
         else:
-            edges = np.array(b.edges)
+            edges = jnp.array(b.edges)
         xs = _midpoints(edges)
 
         ys = b.content
@@ -44,7 +44,7 @@ class SplineWithGrad:
 
         def clip(x: Value) -> Value:
             # so that extrapolation works
-            return np.clip(x, spline.x[0], spline.x[-1])
+            return jnp.clip(x, spline.x[0], spline.x[-1])
 
         @jax.custom_vjp
         def eval_spline(x):  # type: ignore[no-untyped-def]
