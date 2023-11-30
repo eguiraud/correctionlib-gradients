@@ -24,35 +24,38 @@ class SplineWithGrad:
     def __call__(self, v: Value) -> Value:
         return self.spline(v)
 
+    @staticmethod
+    def from_binning(b: Binning) -> "SplineWithGrad":
+        if isinstance(b.edges, UniformBinning):
+            edges = np.linspace(b.edges.low, b.edges.high, b.edges.n + 1)
+        else:
+            edges = np.array(b.edges)
+        xs = _midpoints(edges)
 
-def make_differentiable_spline(b: Binning) -> SplineWithGrad:
-    var: str = b.input
+        ys = b.content
+        assert all(isinstance(y, float) for y in ys)  # noqa: S101
 
-    if isinstance(b.edges, UniformBinning):
-        xs = np.linspace(b.edges.low, b.edges.high, b.edges.n + 1)
-    else:
-        xs = np.array(b.edges)
+        return SplineWithGrad.from_contents(xs, ys, b.input)
 
-    ys = b.content
-    assert all(isinstance(y, float) for y in ys)  # noqa: S101
+    @staticmethod
+    def from_contents(xs: jax.Array, ys: jax.Array, var: str) -> "SplineWithGrad":
+        spline = CubicSpline(xs, ys, bc_type="clamped")
+        dspline = spline.derivative(1)
 
-    spline = CubicSpline(_midpoints(xs), ys, bc_type="clamped")
-    dspline = spline.derivative(1)
+        def clip(x: Value) -> Value:
+            # so that extrapolation works
+            return np.clip(x, spline.x[0], spline.x[-1])
 
-    def clip(x: Value) -> Value:
-        # so that extrapolation works
-        return np.clip(x, spline.x[0], spline.x[-1])
+        @jax.custom_vjp
+        def eval_spline(x):  # type: ignore[no-untyped-def]
+            return spline(clip(x))
 
-    @jax.custom_vjp
-    def eval_spline(x):  # type: ignore[no-untyped-def]
-        return spline(clip(x))
+        def eval_spline_fwd(x):  # type: ignore[no-untyped-def]
+            return eval_spline(x), dspline(clip(x))
 
-    def eval_spline_fwd(x):  # type: ignore[no-untyped-def]
-        return eval_spline(x), dspline(clip(x))
+        def eval_spline_bwd(res, g):  # type: ignore[no-untyped-def]
+            return ((res * g),)
 
-    def eval_spline_bwd(res, g):  # type: ignore[no-untyped-def]
-        return ((res * g),)
+        eval_spline.defvjp(eval_spline_fwd, eval_spline_bwd)
 
-    eval_spline.defvjp(eval_spline_fwd, eval_spline_bwd)
-
-    return SplineWithGrad(spline=eval_spline, var=var)
+        return SplineWithGrad(spline=eval_spline, var=var)
