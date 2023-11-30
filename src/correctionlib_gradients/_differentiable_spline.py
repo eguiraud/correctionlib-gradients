@@ -25,9 +25,6 @@ class SplineWithGrad:
         return self.spline(v)
 
 
-# TODO: the callable returned is not traceable by JAX, so it does not support jax.jit, jax.vmap etc.
-# TODO: would it make more sense if the value returned was the exact value given by the binning,
-#       while the derivative is calculated by spline.derivative?
 def make_differentiable_spline(b: Binning) -> SplineWithGrad:
     var: str = b.input
 
