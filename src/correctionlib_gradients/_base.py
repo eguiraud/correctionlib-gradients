@@ -9,7 +9,7 @@ import jax.numpy as jnp
 import numpy as np
 
 import correctionlib_gradients._utils as utils
-from correctionlib_gradients._differentiable_spline import SplineWithGrad, make_differentiable_spline
+from correctionlib_gradients._differentiable_spline import SplineWithGrad
 from correctionlib_gradients._formuladag import FormulaDAG
 from correctionlib_gradients._typedefs import Value
 
@@ -42,7 +42,7 @@ class CorrectionDAG:
                         " (one or more of the bin contents are not simple scalars). This is not supported."
                     )
                     raise ValueError(msg)
-                self.node = make_differentiable_spline(c.data)
+                self.node = SplineWithGrad.from_binning(c.data)
             case schema.Binning(flow=flow):
                 flow = cast(str, flow)  # type: ignore[has-type]
                 msg = f"Correction '{c.name}' contains a Binning correction with `{flow=}`. Only 'clamp' is supported."
