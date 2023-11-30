@@ -9,8 +9,8 @@ import jax.numpy as jnp
 import numpy as np
 
 import correctionlib_gradients._utils as utils
-from correctionlib_gradients._differentiable_spline import SplineWithGrad
 from correctionlib_gradients._formuladag import FormulaDAG
+from correctionlib_gradients._spline_with_grad import SplineWithGrad
 from correctionlib_gradients._typedefs import Value
 
 DAGNode: TypeAlias = float | SplineWithGrad | FormulaDAG
