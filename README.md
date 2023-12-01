@@ -33,6 +33,7 @@ pip install correctionlib-gradients
 
 ```python
 import jax
+import jax.numpy as jnp
 
 from correctionlib import schemav2
 from correctionlib_gradients import CorrectionWithGradient
@@ -56,23 +57,24 @@ c = CorrectionWithGradient(formula_schema)
 
 # use c.evaluate as a JAX-friendly, auto-differentiable function
 value, grad = jax.value_and_grad(c.evaluate)(3.0)
-assert jax.numpy.isclose(value, 9.0)
-assert jax.numpy.isclose(grad, 6.0)
+assert jnp.isclose(value, 9.0)
+assert jnp.isclose(grad, 6.0)
 
-# jax.jit works too (only for Formula corrections)
-value, grad = jax.jit(jax.value_and_grad(c.evaluate))(3.0)
-assert jax.numpy.isclose(value, 9.0)
-assert jax.numpy.isclose(grad, 6.0)
+# for Formula corrections, jax.jit and jax.vmap work too
+xs = jnp.array([3.0, 4.0])
+values, grads = jax.vmap(jax.jit(jax.value_and_grad(c.evaluate)))(xs)
+assert jnp.allclose(values, jnp.array([9.0, 16.0]))
+assert jnp.allclose(grads, jnp.array([6.0, 8.0]))
 ```
 
 ## Supported types of corrections
 
 Currently the following corrections from `correctionlib.schemav2` are supported:
 
-- `Formula`
+- `Formula`, including parametrical formulas
 - `Binning` with uniform or non-uniform bin edges and `flow="clamp"`; bin contents can be either:
   - all scalar values
-  - all `Formula`s
+  - all `Formula` or `FormulaRef`
 - scalar constants
 
 ## License
