@@ -13,7 +13,7 @@ class CompoundBinning:
     edges: jax.Array
     values: list[FormulaDAG]
 
-    def __init__(self, b: schema.Binning):
+    def __init__(self, b: schema.Binning, generic_formulas: list[schema.Formula]):
         # nothing else is supported
         assert b.flow == "clamp"  # noqa: S101
 
@@ -24,12 +24,16 @@ class CompoundBinning:
         else:
             self.edges = jnp.array(b.edges)
 
+        variable = schema.Variable(name=self.var, type="real")
         self.values = []
         for value in b.content:
-            assert isinstance(value, schema.Formula)  # noqa: S101
-            variable = schema.Variable(name=self.var, type="real")
-            formula = FormulaDAG(value, inputs=[variable])
-            self.values.append(formula)
+            if isinstance(value, schema.FormulaRef):
+                formula = generic_formulas[value.index].copy()
+                formula.parameters = value.parameters
+                self.values.append(FormulaDAG(formula, inputs=[variable]))
+            else:
+                assert isinstance(value, schema.Formula)  # noqa: S101
+                self.values.append(FormulaDAG(value, inputs=[variable]))
 
     def evaluate(self, inputs: dict[str, jax.Array]) -> jax.Array:
         x = inputs[self.var]

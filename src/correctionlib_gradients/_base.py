@@ -40,12 +40,12 @@ class CorrectionDAG:
                 if all(isinstance(v, float) for v in values):  # type: ignore[has-type]
                     # simple binning
                     self.node = SplineWithGrad.from_binning(c.data)
-                elif all(isinstance(v, schema.Formula) for v in values):  # type: ignore[has-type]
-                    self.node = CompoundBinning(binning)
+                elif all(isinstance(v, (schema.Formula, schema.FormulaRef)) for v in values):  # type: ignore[has-type]
+                    self.node = CompoundBinning(binning, c.generic_formulas)
                 else:
                     msg = (
                         f"Correction '{c.name}' contains a Binning correction but the bin contents"
-                        " are neither all scalars nor all Formulas. This is not supported."
+                        " are neither all scalars nor all Formulas/FormulaRefs. This is not supported."
                     )
                     raise ValueError(msg)
             case schema.Binning(flow=flow):
