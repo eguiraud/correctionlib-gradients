@@ -9,11 +9,12 @@ import jax.numpy as jnp
 import numpy as np
 
 import correctionlib_gradients._utils as utils
+from correctionlib_gradients._compound_binning import CompoundBinning
 from correctionlib_gradients._formuladag import FormulaDAG
 from correctionlib_gradients._spline_with_grad import SplineWithGrad
 from correctionlib_gradients._typedefs import Value
 
-DAGNode: TypeAlias = float | SplineWithGrad | FormulaDAG
+DAGNode: TypeAlias = float | SplineWithGrad | FormulaDAG | CompoundBinning
 
 
 class CorrectionDAG:
@@ -35,14 +36,18 @@ class CorrectionDAG:
         match c.data:
             case float(x):
                 self.node = x
-            case schema.Binning(content=[*values], flow="clamp"):
-                if not all(isinstance(v, float) for v in values):  # type: ignore[has-type]
+            case schema.Binning(content=[*values], flow="clamp") as binning:
+                if all(isinstance(v, float) for v in values):  # type: ignore[has-type]
+                    # simple binning
+                    self.node = SplineWithGrad.from_binning(c.data)
+                elif all(isinstance(v, schema.Formula) for v in values):  # type: ignore[has-type]
+                    self.node = CompoundBinning(binning)
+                else:
                     msg = (
-                        f"Correction '{c.name}' contains a compound Binning correction"
-                        " (one or more of the bin contents are not simple scalars). This is not supported."
+                        f"Correction '{c.name}' contains a Binning correction but the bin contents"
+                        " are neither all scalars nor all Formulas. This is not supported."
                     )
                     raise ValueError(msg)
-                self.node = SplineWithGrad.from_binning(c.data)
             case schema.Binning(flow=flow):
                 flow = cast(str, flow)  # type: ignore[has-type]
                 msg = f"Correction '{c.name}' contains a Binning correction with `{flow=}`. Only 'clamp' is supported."
@@ -66,6 +71,8 @@ class CorrectionDAG:
                 return s(inputs[s.var])
             case FormulaDAG() as f:
                 return f.evaluate(inputs)
+            case CompoundBinning() as cb:
+                return cb.evaluate(inputs)
 
 
 class CorrectionWithGradient:
