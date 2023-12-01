@@ -16,6 +16,7 @@ A [JAX](https://jax.readthedocs.io)-friendly, auto-differentiable, Python-only i
 - [Installation](#installation)
 - [Usage](#usage)
 - [Supported types of corrections](#supported-types-of-corrections)
+- [Known limitations](#known-limitations)
 - [License](#license)
 
 ## Installation
@@ -76,6 +77,14 @@ Currently the following corrections from `correctionlib.schemav2` are supported:
   - all scalar values
   - all `Formula` or `FormulaRef`
 - scalar constants
+
+## Known limitations
+
+Only the evaluation of `Formula` corrections is fully JAX traceable.
+
+For other corrections, e.g. `Binning`, gradients can be computed (`jax.grad` works) but as JAX cannot
+trace the computation utilities such as `jax.jit` and `jax.vmap` will not work.
+`np.vectorize` can be used as an alternative to `jax.vmap` in these cases.
 
 ## License
 
