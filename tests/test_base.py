@@ -153,6 +153,33 @@ schemas = {
             nodetype="formula", expression="[0]*x + [1]", parser="TFormula", variables=["x"], parameters=[2.0, 3.0]
         ),
     ),
+    "compound-binning-with-formularef": schemav2.Correction(
+        name="reftest",
+        version=2,
+        inputs=[
+            schemav2.Variable(name="x", type="real"),
+        ],
+        output=schemav2.Variable(name="a scale", type="real"),
+        generic_formulas=[
+            schemav2.Formula(
+                nodetype="formula",
+                expression="[0] + [1]*x",
+                parser="TFormula",
+                variables=["x"],
+            ),
+        ],
+        data=schemav2.Binning(
+            nodetype="binning",
+            input="x",
+            edges=[0, 1, 2, 3],
+            content=[
+                schemav2.FormulaRef(nodetype="formularef", index=0, parameters=[0.1, 0.2]),
+                schemav2.FormulaRef(nodetype="formularef", index=0, parameters=[1.1, -0.2]),
+                schemav2.FormulaRef(nodetype="formularef", index=0, parameters=[3.1, 0.5]),
+            ],
+            flow="clamp",
+        ),
+    ),
     # this type of correction is unsupported
     "categorical": schemav2.Correction(
         name="categorical",
@@ -453,3 +480,14 @@ def test_compound_nonuniform_binning():
     value, grad = jax.value_and_grad(cg.evaluate)(0.5)
     assert math.isclose(value, 0.5 * 0.5)
     assert math.isclose(grad, 1.0)
+
+
+def test_compound_binning_with_formularef():
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Correction 'reftest' contains a Binning correction but "
+            "the bin contents are neither all scalars nor all Formulas. This is not supported."
+        ),
+    ):
+        CorrectionWithGradient(schemas["compound-binning-with-formularef"])
