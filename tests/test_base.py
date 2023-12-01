@@ -483,11 +483,11 @@ def test_compound_nonuniform_binning():
 
 
 def test_compound_binning_with_formularef():
-    with pytest.raises(
-        ValueError,
-        match=(
-            "Correction 'reftest' contains a Binning correction but "
-            "the bin contents are neither all scalars nor all Formulas. This is not supported."
-        ),
-    ):
-        CorrectionWithGradient(schemas["compound-binning-with-formularef"])
+    cg = CorrectionWithGradient(schemas["compound-binning-with-formularef"])
+
+    value = cg.evaluate(0.5)
+    assert math.isclose(value, 0.2)
+
+    value, grad = jax.value_and_grad(cg.evaluate)(0.5)
+    assert math.isclose(value, 0.2)
+    assert math.isclose(grad, 0.2)
