@@ -63,6 +63,19 @@ schemas = {
             flow="clamp",
         ),
     ),
+    "compound-uniform-binning": schemav2.Correction(
+        name="compound uniform binning",
+        version=2,
+        inputs=[schemav2.Variable(name="x", type="real")],
+        output=schemav2.Variable(name="weight", type="real"),
+        data=schemav2.Binning(
+            nodetype="binning",
+            input="x",
+            edges=schemav2.UniformBinning(n=1, low=0.0, high=1.0),
+            content=[schemav2.Formula(nodetype="formula", expression="x*x", parser="TFormula", variables=["x"])],
+            flow="clamp",
+        ),
+    ),
     "compound-nonuniform-binning": schemav2.Correction(
         name="compound non-uniform binning",
         version=2,
@@ -181,18 +194,6 @@ def test_missing_input():
 def test_unsupported_correction():
     with pytest.raises(ValueError, match="Correction 'categorical' contains the unsupported operation type 'Category'"):
         CorrectionWithGradient(schemas["categorical"])
-
-
-def test_unsupported_compound_binning():
-    with pytest.raises(
-        ValueError,
-        match=(
-            "Correction 'compound non-uniform binning' contains a compound "
-            "Binning correction \\(one or more of the bin contents are not "
-            "simple scalars\\). This is not supported."
-        ),
-    ):
-        CorrectionWithGradient(schemas["compound-nonuniform-binning"])
 
 
 def test_unsupported_flow_type():
@@ -428,3 +429,27 @@ def test_formula_with_parameters(jit):
     assert np.allclose(values, [5.0, 7.0])
     assert len(grads) == 2
     assert np.allclose(grads, [2.0, 2.0])
+
+
+# TODO: can we make jax.jit work with the bin look-up?
+def test_compound_uniform_binning():
+    cg = CorrectionWithGradient(schemas["compound-uniform-binning"])
+
+    value = cg.evaluate(0.5)
+    assert math.isclose(value, 0.5 * 0.5)
+
+    value, grad = jax.value_and_grad(cg.evaluate)(0.5)
+    assert math.isclose(value, 0.5 * 0.5)
+    assert math.isclose(grad, 1.0)
+
+
+# TODO: can we make jax.jit work with the bin look-up?
+def test_compound_nonuniform_binning():
+    cg = CorrectionWithGradient(schemas["compound-nonuniform-binning"])
+
+    value = cg.evaluate(0.5)
+    assert math.isclose(value, 0.5 * 0.5)
+
+    value, grad = jax.value_and_grad(cg.evaluate)(0.5)
+    assert math.isclose(value, 0.5 * 0.5)
+    assert math.isclose(grad, 1.0)
