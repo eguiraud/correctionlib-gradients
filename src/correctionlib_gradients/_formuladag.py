@@ -24,11 +24,6 @@ class Variable:
     name: str
 
 
-@dataclass
-class Parameter:
-    idx: int
-
-
 class BinaryOp(Enum):
     EQUAL = auto()
     NOTEQUAL = auto()
@@ -68,7 +63,7 @@ class UnaryOp(Enum):
     ATANH = auto()
 
 
-FormulaNode: TypeAlias = Union[Literal, Variable, Parameter, "Op"]
+FormulaNode: TypeAlias = Union[Literal, Variable, "Op"]
 
 
 @dataclass
