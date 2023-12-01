@@ -82,11 +82,9 @@ with features and find out about roadblocks.
 In the longer term, it would be nice to have a single correctionlib AD implementation
 that serves both C++ and Python users.
 
-At the time of writing I do not know of a C++ library that can autodifferentiate the
-compute graph evaluation the same way JAX does in this package.
-And implementing such a C++ library is a project of a larger scope than we feel like
-tackling at this point. We could check where things break exactly with an
-existing AD library such as [enzyme](https://enzyme.mit.edu).
-
-Another option to explore is to perform C++ code generation of a function that evaluates
-the compute graph and then pass that function through [clad](https://github.com/vgvassilev/clad).
+At the time of writing I do not know of a C++ library that can autodifferentiate a dynamic compute
+graph evaluation the same way JAX does in this package (and implementing such a C++ library is a project
+of a larger scope than what I feel like tackling at this point).
+I think the best option for C++ is implementing a code generator that produces code that evaluates a
+given correction, then pass the generated correction evaluation code through
+[enzyme](https://enzyme.mit.edu/) or [clad](https://github.com/vgvassilev/clad).
