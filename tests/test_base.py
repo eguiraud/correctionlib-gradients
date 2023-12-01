@@ -192,6 +192,22 @@ schemas = {
             content=[schemav2.CategoryItem(key=0, value=1.234)],
         ),
     ),
+    # this type of correction is unsupported
+    "compound-binning-with-categorical": schemav2.Correction(
+        name="compound binning with categorical",
+        version=2,
+        inputs=[schemav2.Variable(name="x", type="real")],
+        output=schemav2.Variable(name="weight", type="real"),
+        data=schemav2.Binning(
+            nodetype="binning",
+            input="x",
+            edges=schemav2.UniformBinning(n=1, low=0.0, high=1.0),
+            content=[
+                schemav2.Category(nodetype="category", input="x", content=[schemav2.CategoryItem(key=0, value=1.234)])
+            ],
+            flow="clamp",
+        ),
+    ),
 }
 
 
@@ -233,6 +249,17 @@ def test_unsupported_flow_type():
         ),
     ):
         CorrectionWithGradient(schemas["simple-nonuniform-binning-flow-default"])
+
+
+def test_unsupported_binning_content():
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Correction 'compound binning with categorical' contains a Binning correction but "
+            "the bin contents are neither all scalars nor all Formulas/FormulaRefs. This is not supported."
+        ),
+    ):
+        CorrectionWithGradient(schemas["compound-binning-with-categorical"])
 
 
 def test_evaluate_scale_nojax():
