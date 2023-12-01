@@ -59,7 +59,7 @@ value, grad = jax.value_and_grad(c.evaluate)(3.0)
 assert jax.numpy.isclose(value, 9.0)
 assert jax.numpy.isclose(grad, 6.0)
 
-# jax.jit works too
+# jax.jit works too (only for Formula corrections)
 value, grad = jax.jit(jax.value_and_grad(c.evaluate))(3.0)
 assert jax.numpy.isclose(value, 9.0)
 assert jax.numpy.isclose(grad, 6.0)
@@ -70,7 +70,9 @@ assert jax.numpy.isclose(grad, 6.0)
 Currently the following corrections from `correctionlib.schemav2` are supported:
 
 - `Formula`
-- `Binning` with uniform and non-uniform bin edges, simple scalar bin values, and `flow="clamp"`
+- `Binning` with uniform or non-uniform bin edges and `flow="clamp"`; bin contents can be either:
+  - all scalar values
+  - all `Formula`s
 - scalar constants
 
 ## License
