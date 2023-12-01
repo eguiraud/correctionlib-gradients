@@ -21,6 +21,32 @@ which is done by providing the implementation of the corresponding Jacobian vect
 We then wrap the JAX-friendly compute graph evaluation in a `CorrectionWithGradient` object
 that mimics the interface of `correctionlib.highlevel.Correction`.
 
+## Correction evaluations and JAX tracing
+
+JAX needs to be able to trace computations through a call to `CorrectionWithGradient.evaluate`
+in order to support features such as `jax.jit` or `jax.vmap`.
+At the time of writing, only the evaluation of `Formula` corrections is fully JAX traceable.
+
+The problems with other types of corrections:
+
+- scipy's cubic splines, that we use as a differentiable approximation of a 1D histogram profile, at some
+  point explicitly cast the input array to `np.array`, and JAX cannot trace what happens to the inputs
+  after that point
+- in case of a Formula inside a Binning, we first look up which bin in the Binning we care about, and
+  then evaluate the corresponding Formula. During tracing, the index that would be used for the bin
+  look-up does not have a value, it's just a traced array, and of course that breaks
+
+This topic is tracked at https://github.com/eguiraud/correctionlib-gradients/issues/42.
+
+## Floating point precision
+
+JAX aggressively casts to float32.
+In the case of correctionlib we might prefer double precision whenever possible.
+It can be configured with `from jax import config; config.update("jax_enable_x64", True)`
+but it also seems wrong to set it at global scope behind the users' back.
+With things as they are now, `test_scalar` would fail with `jit=True` because of loss of precision
+if we didn't configure JAX as above at the start of the test.
+
 ## Alternative considered: Python code generation
 
 Instead of implementing a generic compute graph evaluator through which we pass
