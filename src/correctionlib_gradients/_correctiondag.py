@@ -8,6 +8,7 @@ import correctionlib_gradients._utils as utils
 from correctionlib_gradients._compound_binning import CompoundBinning
 from correctionlib_gradients._formuladag import FormulaDAG
 from correctionlib_gradients._spline_with_grad import SplineWithGrad
+from correctionlib_gradients._category_with_grad import CategoryWithGrad
 
 DAGNode: TypeAlias = float | SplineWithGrad | FormulaDAG | CompoundBinning
 
@@ -49,6 +50,10 @@ class CorrectionDAG:
                 raise ValueError(msg)
             case schema.Formula() as f:
                 self.node = FormulaDAG(f, c.inputs)
+            case schema.Category() as category:
+                self.node = CategoryWithGrad.from_category(category, c.inputs, c.generic_formulas)
+            # case schema.Category() as category:
+            #     self.node = CategoryWithGrad(category, c.inputs, c.generic_formulas)
             case _:
                 msg = f"Correction '{c.name}' contains the unsupported operation type '{type(c.data).__name__}'"
                 raise ValueError(msg)
@@ -68,3 +73,7 @@ class CorrectionDAG:
                 return f.evaluate(inputs)
             case CompoundBinning() as cb:
                 return cb.evaluate(inputs)
+            case CategoryWithGrad() as cat:
+                return cat.evaluate(inputs)
+            # case CategoryWithGrad() as cat:
+            #     return cat(inputs[cat.var])
