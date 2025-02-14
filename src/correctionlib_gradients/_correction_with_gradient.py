@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2023-present Enrico Guiraud <enrico.guiraud@pm.me>
 #
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import TypeAlias, Union
 import correctionlib.schemav2 as schema
 import jax
 import jax.numpy as jnp
@@ -18,10 +19,14 @@ class CorrectionWithGradient:
 
     def evaluate(self, *inputs: Value) -> jax.Array:
         self._check_num_inputs(inputs)
-        inputs_as_jax = tuple(jnp.array(i) for i in inputs)
+        # inputs_as_jax = tuple(jnp.array(i) for i in inputs)
+
+        inputs_as_jax = tuple(
+            i if isinstance(i, str) else jnp.array(i)
+            for i in inputs
+        )
         self._check_input_types(inputs_as_jax)
         input_names = (v.name for v in self._input_vars)
-
         input_dict = dict(zip(input_names, inputs_as_jax))
         return self._dag.evaluate(input_dict)
 
@@ -33,14 +38,31 @@ class CorrectionWithGradient:
             )
             raise ValueError(msg)
 
-    def _check_input_types(self, inputs: tuple[jax.Array, ...]) -> None:
+    def _check_input_types(self, inputs: tuple[Union[jax.Array, str], ...]) -> None:
         for i, v in enumerate(inputs):
-            in_type = v.dtype
             expected_type_str = self._input_vars[i].type
-            expected_type = {"real": np.floating, "int": np.integer}[expected_type_str]
-            if not np.issubdtype(in_type, expected_type):
-                msg = (
-                    f"Variable '{self._input_vars[i].name}' has type {in_type}"
-                    f" instead of the expected {expected_type.__name__}"
-                )
-                raise ValueError(msg)
+            
+            if expected_type_str == "string":
+                if not isinstance(v, str):
+                    msg = (
+                        f"Variable '{self._input_vars[i].name}' should be a string "
+                        f"but got {type(v).__name__}"
+                    )
+                    raise ValueError(msg)
+            else:
+                # For numeric types, check the dtype
+                if isinstance(v, str):
+                    msg = (
+                        f"Variable '{self._input_vars[i].name}' should be numeric "
+                        f"but got a string"
+                    )
+                    raise ValueError(msg)
+                    
+                in_type = v.dtype
+                expected_type = {"real": np.floating, "int": np.integer}[expected_type_str]
+                if not np.issubdtype(in_type, expected_type):
+                    msg = (
+                        f"Variable '{self._input_vars[i].name}' has type {in_type}"
+                        f" instead of the expected {expected_type.__name__}"
+                    )
+                    raise ValueError(msg)
