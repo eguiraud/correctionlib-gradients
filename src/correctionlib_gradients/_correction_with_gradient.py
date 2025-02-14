@@ -2,10 +2,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 from typing import TypeAlias, Union
-import correctionlib.schemav2 as schema
+
 import jax
 import jax.numpy as jnp
 import numpy as np
+import correctionlib.schemav2 as schema
 
 from correctionlib_gradients._correctiondag import CorrectionDAG
 from correctionlib_gradients._typedefs import Value
@@ -19,8 +20,6 @@ class CorrectionWithGradient:
 
     def evaluate(self, *inputs: Value) -> jax.Array:
         self._check_num_inputs(inputs)
-        # inputs_as_jax = tuple(jnp.array(i) for i in inputs)
-
         inputs_as_jax = tuple(
             i if isinstance(i, str) else jnp.array(i)
             for i in inputs

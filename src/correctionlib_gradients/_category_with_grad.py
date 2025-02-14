@@ -1,28 +1,21 @@
 from typing import Union, Dict, List, Any
+from dataclasses import dataclass
+
 import jax
 import jax.numpy as jnp
 import correctionlib.schemav2 as schema
+
 from correctionlib_gradients._formuladag import FormulaDAG
 from correctionlib_gradients._utils import get_result_size
 from correctionlib_gradients._typedefs import Value
-from dataclasses import dataclass
 
-from correctionlib_gradients._typedefs import Value
-
-from typing import Union, Dict, List, Any
-import jax
-import jax.numpy as jnp
-import correctionlib.schemav2 as schema
-from correctionlib_gradients._utils import get_result_size
-from correctionlib_gradients._typedefs import Value
-from dataclasses import dataclass
 
 @dataclass
 class CategoryWithGrad:
     """A JAX-friendly representation of a Category correction."""
-    var: str  # The category input variable
+    var: str  # The category input variable name
     content: Dict[Any, Union[float, 'FormulaDAG']]  # Map from original keys to value/formula
-    input_vars: List[str]  # All input variables needed
+    input_vars: List[str]
     default: Union[float, None]
     _key_to_idx: Dict[Any, int]  # Map from external keys (str/int) to internal indices
     _idx_to_key: Dict[int, Any]  # Map from internal indices to external keys
@@ -42,7 +35,6 @@ class CategoryWithGrad:
             if isinstance(item.value, float):
                 content[item.key] = item.value
             elif isinstance(item.value, (schema.Formula, schema.FormulaRef)):
-                # If it's a formula, convert it to FormulaDAG
                 if isinstance(item.value, schema.FormulaRef) and generic_formulas:
                     formula = generic_formulas[item.value.ref]
                 else:
@@ -76,11 +68,6 @@ class CategoryWithGrad:
         # Convert to internal index for JAX compatibility
         x = jnp.array(self._key_to_idx[lookup_key])
 
-        print(f"lookup_key: {lookup_key}")
-        print(f"self._key_to_idx: {self._key_to_idx}")
-        print(f"self._idx_to_key: {self._idx_to_key}")
-        print(f"orig_x: {orig_x}, x: {x}")
-        
         def _handle_single_input(xi: Value, *args: Value) -> Value:
             # Convert back to original key for content lookup
             idx = int(xi)
