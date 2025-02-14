@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2023-present Enrico Guiraud <enrico.guiraud@pm.me>
 #
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import TypeAlias, Union
+from typing import Union
 
 import jax
 import jax.numpy as jnp
