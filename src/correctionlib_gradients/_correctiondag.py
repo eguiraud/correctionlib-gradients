@@ -10,7 +10,7 @@ from correctionlib_gradients._formuladag import FormulaDAG
 from correctionlib_gradients._spline_with_grad import SplineWithGrad
 from correctionlib_gradients._category_with_grad import CategoryWithGrad
 
-DAGNode: TypeAlias = float | SplineWithGrad | FormulaDAG | CompoundBinning
+DAGNode: TypeAlias = float | SplineWithGrad | FormulaDAG | CompoundBinning | CategoryWithGrad
 
 
 class CorrectionDAG:
