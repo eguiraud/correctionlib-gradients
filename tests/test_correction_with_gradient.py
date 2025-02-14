@@ -214,7 +214,7 @@ schemas = {
             ]
         ),
     ),
-    # can be differentiated w.r.t. x, but not c
+    # same as above 'int-categorical-with-formula' but with str indexing
     "str-categorical-with-formula": schemav2.Correction(
         name="categorical-with-formula",
         version=2,
