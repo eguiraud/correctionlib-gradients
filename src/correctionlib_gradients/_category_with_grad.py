@@ -13,9 +13,9 @@ from correctionlib_gradients._typedefs import Value
 @dataclass
 class CategoryWithGrad:
     """A JAX-friendly representation of a Category correction."""
-    var: str  # The category input variable name
-    content: Dict[Any, Union[float, 'FormulaDAG']]  # Map from original keys to value/formula
-    input_vars: List[str]
+    var: str  # The category input variable
+    content: Dict[Any, Union[float, 'FormulaDAG', 'CategoryWithGrad']]  # Map from original keys to value/formula/category
+    input_vars: List[str]  # All input variables needed
     default: Union[float, None]
     _key_to_idx: Dict[Any, int]  # Map from external keys (str/int) to internal indices
     _idx_to_key: Dict[int, Any]  # Map from internal indices to external keys
@@ -26,9 +26,12 @@ class CategoryWithGrad:
         key_to_idx = {}
         idx_to_key = {}
         
-        # Create mapping between external keys and internal indices
-        # But keep content using original keys
-        for idx, item in enumerate(category.content):
+        # Sort the keys to ensure consistent ordering
+        sorted_items = sorted(category.content, key=lambda x: x.key)
+        
+        for item in sorted_items:
+            # Use the original key directly as the index
+            idx = len(key_to_idx)
             key_to_idx[item.key] = idx
             idx_to_key[idx] = item.key
             
@@ -40,6 +43,9 @@ class CategoryWithGrad:
                 else:
                     formula = item.value
                 content[item.key] = FormulaDAG(formula, inputs)
+            elif isinstance(item.value, schema.Category):
+                # Recursively handle nested categories
+                content[item.key] = CategoryWithGrad.from_category(item.value, inputs, generic_formulas)
             else:
                 raise ValueError(f"Unsupported content type in Category: {type(item.value)}")
         
@@ -63,11 +69,13 @@ class CategoryWithGrad:
             lookup_key = orig_x
             
         if lookup_key not in self._key_to_idx:
-            raise ValueError(f"Category key '{lookup_key}' not found")
+            if self.default is not None:
+                return jnp.array(self.default)
+            raise ValueError(f"Category key '{lookup_key}' not found and no default specified")
         
         # Convert to internal index for JAX compatibility
         x = jnp.array(self._key_to_idx[lookup_key])
-
+        
         def _handle_single_input(xi: Value, *args: Value) -> Value:
             # Convert back to original key for content lookup
             idx = int(xi)
@@ -76,9 +84,20 @@ class CategoryWithGrad:
             
             if isinstance(value, float):
                 return value
+            elif isinstance(value, CategoryWithGrad):
+                # For nested categories, ensure we pass through only the inputs they need
+                needed_inputs = {k: v for k, v in inputs.items() if k in value.input_vars}
+                return value.evaluate(needed_inputs)
             else:  # FormulaDAG
-                # Create input dict for formula evaluation
-                input_dict = {name: arg for name, arg in zip(self.input_vars, args)}
+                # Create input dict for formula evaluation, checking that we have all needed variables
+                input_dict = {}
+                # We need all variables that the formula depends on
+                for name, arg in zip(self.input_vars, args):
+                    input_dict[name] = arg
+                # Also include any other variables from the inputs that the formula might need
+                for name in inputs:
+                    if name not in input_dict:
+                        input_dict[name] = inputs[name]
                 return value.evaluate(input_dict)
 
         # Get all required inputs as arrays except the category variable
