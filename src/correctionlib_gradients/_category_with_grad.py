@@ -12,15 +12,14 @@ from correctionlib_gradients._typedefs import Value
 
 @dataclass
 class CategoryWithGrad:
-    var: str  # The category input variable (e.g. 'q')
+    var: str  # The category input variable name
     content: Dict[int, Union[float, 'FormulaDAG']]  # Map from category to value/formula
-    input_vars: List[str]  # All input variables needed (e.g. ['phi', 'q'])
+    input_vars: List[str]  # All input variable names needed
     default: Union[float, None]
 
     @staticmethod
     def from_category(category: schema.Category, inputs: List[schema.Variable], generic_formulas: Dict[str, schema.Formula] = None) -> "CategoryWithGrad":
         content = {}
-        all_vars = {v.name for v in inputs}
         
         # Process each key-value pair in the category
         for item in category.content:
