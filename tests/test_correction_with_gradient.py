@@ -181,7 +181,7 @@ schemas = {
         ),
     ),
     # can be differentiated w.r.t. x, but not c
-    "categorical-with-formula": schemav2.Correction(
+    "int-categorical-with-formula": schemav2.Correction(
         name="categorical-with-formula",
         version=2,
         inputs=[
@@ -204,6 +204,40 @@ schemas = {
                 ),
                 schemav2.CategoryItem(
                     key=-1,
+                    value=schemav2.Formula(
+                        nodetype="formula",
+                        variables=["x"],
+                        parser="TFormula",
+                        expression="1337*x",
+                    ),
+                ),
+            ]
+        ),
+    ),
+    # can be differentiated w.r.t. x, but not c
+    "str-categorical-with-formula": schemav2.Correction(
+        name="categorical-with-formula",
+        version=2,
+        inputs=[
+            schemav2.Variable(name="x", type="real"),
+            schemav2.Variable(name="c", type="string"),
+        ],
+        output=schemav2.Variable(name="a scale", type="real"),
+        data=schemav2.Category(
+            nodetype="category",
+            input="c",
+            content=[
+                schemav2.CategoryItem(
+                    key="up",
+                    value=schemav2.Formula(
+                        nodetype="formula",
+                        variables=["x"],
+                        parser="TFormula",
+                        expression="42*x",
+                    ),
+                ),
+                schemav2.CategoryItem(
+                    key="down",
                     value=schemav2.Formula(
                         nodetype="formula",
                         variables=["x"],
@@ -538,7 +572,7 @@ def test_compound_binning_with_formularef():
 
 
 def test_categorical_with_formula():
-    cg = CorrectionWithGradient(schemas["categorical-with-formula"])
+    cg = CorrectionWithGradient(schemas["int-categorical-with-formula"])
 
     value = cg.evaluate(0.5, 1)
     assert math.isclose(value, 21.0)
@@ -560,3 +594,28 @@ def test_categorical_with_formula():
 
     with pytest.raises(TypeError):
         value, grad = jax.value_and_grad(cg.evaluate, argnums=1)(1.0, -1)
+
+
+def test_str_categorical_with_formula():
+    cg = CorrectionWithGradient(schemas["str-categorical-with-formula"])
+
+    value = cg.evaluate(0.5, "up")
+    assert math.isclose(value, 21.0)
+
+    value, grad = jax.value_and_grad(cg.evaluate, argnums=0)(1.0, "up")
+    assert math.isclose(value, 42.0)
+    assert math.isclose(grad, 42.0)
+
+    value = cg.evaluate(1.0, "down")
+    assert math.isclose(value, 1337.0)
+
+    value, grad = jax.value_and_grad(cg.evaluate, argnums=0)(1.0, "down")
+    assert math.isclose(value, 1337.0)
+    assert math.isclose(grad, 1337.0)
+
+    # differenttiating w.r.t. to the category key should not work
+    with pytest.raises(TypeError):
+        value, grad = jax.value_and_grad(cg.evaluate, argnums=1)(1.0, "up")
+
+    with pytest.raises(TypeError):
+        value, grad = jax.value_and_grad(cg.evaluate, argnums=1)(1.0, "down")
