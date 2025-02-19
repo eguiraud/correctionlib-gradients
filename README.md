@@ -7,7 +7,9 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/correctionlib-gradients.svg)](https://pypi.org/project/correctionlib-gradients)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/correctionlib-gradients.svg)](https://pypi.org/project/correctionlib-gradients)
 
-A [JAX](https://jax.readthedocs.io)-friendly, auto-differentiable, Python-only implementation of [correctionlib](https://github.com/cms-nanoAOD/correctionlib) correction evaluations.
+A [JAX](https://jax.readthedocs.io)-friendly, auto-differentiable, Python-only
+implementation of [correctionlib](https://github.com/cms-nanoAOD/correctionlib)
+correction evaluations.
 
 ---
 
@@ -27,8 +29,10 @@ pip install correctionlib-gradients
 
 ## Usage
 
-1. construct a `CorrectionWithGradient` object from a `correctionlib.schemav2.Correction`
-2. there is no point 2: you can use `CorrectionWithGradient.evaluate` as a normal JAX-friendly, auto-differentiable function
+1. construct a `CorrectionWithGradient` object from a
+   `correctionlib.schemav2.Correction`
+2. there is no point 2: you can use `CorrectionWithGradient.evaluate` as a
+   normal JAX-friendly, auto-differentiable function
 
 ### Example
 
@@ -73,7 +77,8 @@ assert jnp.allclose(grads, jnp.array([6.0, 8.0]))
 Currently the following corrections from `correctionlib.schemav2` are supported:
 
 - `Formula`, including parametrical formulas
-- `Binning` with uniform or non-uniform bin edges and `flow="clamp"`; bin contents can be either:
+- `Binning` with uniform or non-uniform bin edges and `flow="clamp"`; bin
+  contents can be either:
   - all scalar values
   - all `Formula` or `FormulaRef`
 - scalar constants
@@ -82,10 +87,12 @@ Currently the following corrections from `correctionlib.schemav2` are supported:
 
 Only the evaluation of `Formula` corrections is fully JAX traceable.
 
-For other corrections, e.g. `Binning`, gradients can be computed (`jax.grad` works) but as JAX cannot
-trace the computation utilities such as `jax.jit` and `jax.vmap` will not work.
-`np.vectorize` can be used as an alternative to `jax.vmap` in these cases.
+For other corrections, e.g. `Binning`, gradients can be computed (`jax.grad`
+works) but as JAX cannot trace the computation utilities such as `jax.jit` and
+`jax.vmap` will not work. `np.vectorize` can be used as an alternative to
+`jax.vmap` in these cases.
 
 ## License
 
-`correctionlib-gradients` is distributed under the terms of the [BSD 3-Clause](https://spdx.org/licenses/BSD-3-Clause.html) license.
+`correctionlib-gradients` is distributed under the terms of the
+[BSD 3-Clause](https://spdx.org/licenses/BSD-3-Clause.html) license.
