@@ -74,7 +74,7 @@ class Op:
 
 class FormulaDAG:
     def __init__(self, f: schema.Formula, inputs: list[schema.Variable]):
-        cpp_formula = Formula.from_string(f.json(), [CPPVariable.from_string(v.json()) for v in inputs])
+        cpp_formula = Formula.from_string(f.model_dump_json(), [CPPVariable.from_string(v.model_dump_json()) for v in inputs])
         self.input_names = [v.name for v in inputs]
         self.node: FormulaNode = self._make_node(cpp_formula.ast)
 
