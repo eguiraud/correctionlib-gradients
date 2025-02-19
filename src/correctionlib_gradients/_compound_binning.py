@@ -28,7 +28,7 @@ class CompoundBinning:
         self.values = []
         for value in b.content:
             if isinstance(value, schema.FormulaRef):
-                formula = generic_formulas[value.index].copy()
+                formula = generic_formulas[value.index].model_copy()
                 formula.parameters = value.parameters
                 self.values.append(FormulaDAG(formula, inputs=[variable]))
             else:
