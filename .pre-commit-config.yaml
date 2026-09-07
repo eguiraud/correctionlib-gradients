@@ -8,12 +8,12 @@ repos:
       - id: check-added-large-files
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.2
+    rev: v0.16.6
     hooks:
       - id: ruff
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.18.2
+    rev: v2.3.1
     hooks:
       - id: mypy
         files: src
@@ -21,7 +21,7 @@ repos:
         additional_dependencies: ["scipy"]
 
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 25.9.0
+    rev: 26.5.1
     hooks:
       - id: black
         # It is recommended to specify the latest version of Python
@@ -31,14 +31,14 @@ repos:
         language_version: python3.11
 
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: "v3.6.2"
+    rev: "v3.9.6"
     hooks:
       - id: prettier
         types_or: [yaml, markdown, html, css, scss, javascript] #, json]
         args: [--prose-wrap=always]
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.1
+    rev: v2.4.3
     hooks:
       - id: codespell
 
